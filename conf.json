@@ -1,0 +1,10 @@
+{
+	"DbType":"mongodb",
+    "Host":"localhost",
+    "Port":"27017",
+    "DbUser":"admin",
+    "DbPwd":"password",
+    "DbName":"sopie",
+    "FileColl":"files",
+    "TreeColl":"trees"
+}
