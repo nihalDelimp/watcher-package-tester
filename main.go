@@ -115,14 +115,38 @@ func StartWatcher(path string) {
 						if err != nil {
 							log.Println("Error adding watcher to subdirectory:", err)
 						}
+
+						// Save directory information to MongoDB
+						dirInfo := struct {
+							Name string `json:"Name"`
+							Date string `json:"Date"`
+							Type string `json:"Type"`
+						}{
+							Name: event.Name,
+							Date: file.ModTime().String(),
+							Type: "directory",
+						}
+						dirInfoJSON, err := json.Marshal(dirInfo)
+						if err != nil {
+							log.Println("Error marshaling JSON:", err)
+							continue
+						}
+						log.Println(string(dirInfoJSON))
+						_, err = collection.InsertOne(context.TODO(), dirInfo)
+						if err != nil {
+							log.Println("Error inserting directory into MongoDB:", err)
+							continue
+						}
 					} else {
 						// File created
 						fileInfo := struct {
 							Name string `json:"Name"`
 							Date string `json:"Date"`
+							Type string `json:"Type"`
 						}{
 							Name: event.Name,
 							Date: file.ModTime().String(),
+							Type: "file",
 						}
 						fileInfoJSON, err := json.Marshal(fileInfo)
 						if err != nil {
