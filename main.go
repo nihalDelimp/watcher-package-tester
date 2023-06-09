@@ -34,12 +34,25 @@ func StartWatcher(path string) {
 	}
 	defer f.Close()
 
-	// START Read JSON Config
-	jsonData, err := ioutil.ReadFile("conf.json")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	// // START Read JSON Config
+	// jsonData, err := ioutil.ReadFile("conf.json")
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return
+	// }
+
+	// // Parse the JSON data
+	// var varConf Configuration
+	jsonData := []byte(`{
+		"DbType": "mongodb",
+		"Host": "localhost",
+		"Port": "27017",
+		"DbUser": "admin",
+		"DbPwd": "password",
+		"DbName": "sopie",
+		"FileColl": "files",
+		"TreeColl": "trees"
+	}`)
 
 	// Parse the JSON data
 	var varConf Configuration
