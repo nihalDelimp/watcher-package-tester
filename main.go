@@ -50,7 +50,7 @@ func StartWatcher(path string) {
 		"DbUser": "admin",
 		"DbPwd": "password",
 		"DbName": "sopie",
-		"FileColl": "files",
+		"FileColl": "watcher",
 		"TreeColl": "trees"
 	}`)
 
