@@ -108,7 +108,15 @@ func StartWatcher(path string) {
 						log.Println("Error getting file info:", err)
 						continue
 					}
-					if !file.IsDir() {
+					if file.IsDir() {
+						// Directory created
+						log.Println("Directory created:", event.Name)
+						err := watchDir(event.Name)
+						if err != nil {
+							log.Println("Error adding watcher to subdirectory:", err)
+						}
+					} else {
+						// File created
 						fileInfo := struct {
 							Name string `json:"Name"`
 							Date string `json:"Date"`
