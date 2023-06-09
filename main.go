@@ -37,7 +37,7 @@ func StartWatcher(path string) {
 	defer f.Close()
 
 	// START Read JSON Config
-	jsonData, err := ioutil.ReadFile("./conf.json")
+	jsonData, err := ioutil.ReadFile("conf.json")
 	if err != nil {
 		fmt.Println(err)
 		return
