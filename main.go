@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -36,12 +35,17 @@ func StartWatcher(path string) {
 	}
 	defer f.Close()
 
-	// START Read JSON Config
-	jsonData, err := ioutil.ReadFile("conf.json")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	// Hardcoded JSON Config
+	jsonData := []byte(`{
+		"DbType": "mongodb",
+		"Host": "localhost",
+		"Port": "27017",
+		"DbUser": "admin",
+		"DbPwd": "password",
+		"DbName": "sopie",
+		"FileColl": "files",
+		"TreeColl": "trees"
+	}`)
 
 	// Parse the JSON data
 	var varConf Configuration
@@ -50,7 +54,6 @@ func StartWatcher(path string) {
 		fmt.Println(err)
 		return
 	}
-	// END Read JSON Config
 
 	// Set output of logs to f
 	log.SetOutput(f)
@@ -83,7 +86,7 @@ func StartWatcher(path string) {
 	}()
 
 	// Access a MongoDB collection through a database
-	collection := client.Database("sopie").Collection("watcher")
+	collection := client.Database(varConf.DbName).Collection(varConf.FileColl)
 
 	done := make(chan bool)
 
