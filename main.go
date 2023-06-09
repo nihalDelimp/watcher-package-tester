@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,8 +20,6 @@ type Configuration struct {
 	DbType   string `json:"DbType"`
 	Host     string `json:"Host"`
 	Port     string `json:"Port"`
-	DbUser   string `json:"DbUser"`
-	DbPwd    string `json:"DbPwd"`
 	DbName   string `json:"DbName"`
 	FileColl string `json:"FileColl"`
 	TreeColl string `json:"TreeColl"`
@@ -35,17 +34,12 @@ func StartWatcher(path string) {
 	}
 	defer f.Close()
 
-	// Hardcoded JSON Config
-	jsonData := []byte(`{
-		"DbType": "mongodb",
-		"Host": "localhost",
-		"Port": "27017",
-		"DbUser": "admin",
-		"DbPwd": "password",
-		"DbName": "sopie",
-		"FileColl": "files",
-		"TreeColl": "trees"
-	}`)
+	// START Read JSON Config
+	jsonData, err := ioutil.ReadFile("conf.json")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	// Parse the JSON data
 	var varConf Configuration
@@ -54,6 +48,7 @@ func StartWatcher(path string) {
 		fmt.Println(err)
 		return
 	}
+	// END Read JSON Config
 
 	// Set output of logs to f
 	log.SetOutput(f)
@@ -63,12 +58,12 @@ func StartWatcher(path string) {
 	defer watcher.Close()
 
 	// Starting at the root of the project, walk each file/directory searching for directories
-	if err := filepath.Walk(path, watchDir); err != nil {
+	if err := watchDir(path); err != nil {
 		fmt.Println("ERROR", err)
 	}
 
 	// Declare host and port options to pass to the Connect() method
-	mongodbURI := varConf.DbType + "://" + varConf.DbUser + ":" + varConf.DbPwd + "@" + varConf.Host + ":" + varConf.Port
+	mongodbURI := varConf.DbType + "://" + varConf.Host + ":" + varConf.Port
 
 	// Connect to MongoDB
 	clientOptions := options.Client().ApplyURI(mongodbURI)
@@ -131,11 +126,34 @@ func StartWatcher(path string) {
 }
 
 // watchDir gets run as a walk func, searching for directories to add watchers to
-func watchDir(path string, fi os.FileInfo, err error) error {
-	// Since fsnotify can watch all the files in a directory, watchers only need
-	// to be added to each nested directory
-	if fi.Mode().IsDir() {
-		return watcher.Add(path)
+func watchDir(path string) error {
+	if err := watcher.Add(path); err != nil {
+		log.Println("Error adding watcher to directory:", err)
 	}
+
+	fi, err := os.Stat(path)
+	if err != nil {
+		log.Println("Error getting file info:", err)
+		return nil
+	}
+	if !fi.IsDir() {
+		return nil
+	}
+
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		log.Println("Error reading directory:", err)
+		return nil
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			subDirPath := filepath.Join(path, file.Name())
+			if err := watchDir(subDirPath); err != nil {
+				log.Println("Error adding watcher to subdirectory:", err)
+			}
+		}
+	}
+
 	return nil
 }
