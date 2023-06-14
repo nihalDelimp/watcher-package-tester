@@ -25,6 +25,13 @@ type Configuration struct {
 	TreeColl string `json:"TreeColl"`
 }
 
+type FileInfo struct {
+	Root string `json:"Root"`
+	Name string `json:"Name"`
+	Date string `json:"Date"`
+	Type string `json:"Type"`
+}
+
 // StartWatcher starts the file watcher
 func StartWatcher(path string) {
 	// Create your file with desired read/write permissions
@@ -71,7 +78,7 @@ func StartWatcher(path string) {
 	defer watcher.Close()
 
 	// Starting at the root of the project, walk each file/directory searching for directories
-	if err := watchDir(path); err != nil {
+	if err := watchDir(path, ""); err != nil {
 		fmt.Println("ERROR", err)
 	}
 
@@ -111,17 +118,14 @@ func StartWatcher(path string) {
 					if file.IsDir() {
 						// Directory created
 						log.Println("Directory created:", event.Name)
-						err := watchDir(event.Name)
+						err := watchDir(event.Name, event.Name)
 						if err != nil {
 							log.Println("Error adding watcher to subdirectory:", err)
 						}
 
 						// Save directory information to MongoDB
-						dirInfo := struct {
-							Name string `json:"Name"`
-							Date string `json:"Date"`
-							Type string `json:"Type"`
-						}{
+						dirInfo := FileInfo{
+							Root: path,
 							Name: event.Name,
 							Date: file.ModTime().String(),
 							Type: "directory",
@@ -139,11 +143,8 @@ func StartWatcher(path string) {
 						}
 					} else {
 						// File created
-						fileInfo := struct {
-							Name string `json:"Name"`
-							Date string `json:"Date"`
-							Type string `json:"Type"`
-						}{
+						fileInfo := FileInfo{
+							Root: path,
 							Name: event.Name,
 							Date: file.ModTime().String(),
 							Type: "file",
@@ -171,7 +172,7 @@ func StartWatcher(path string) {
 }
 
 // watchDir gets run as a walk func, searching for directories to add watchers to
-func watchDir(path string) error {
+func watchDir(path string, root string) error {
 	if err := watcher.Add(path); err != nil {
 		log.Println("Error adding watcher to directory:", err)
 	}
@@ -194,8 +195,15 @@ func watchDir(path string) error {
 	for _, file := range files {
 		if file.IsDir() {
 			subDirPath := filepath.Join(path, file.Name())
-			if err := watchDir(subDirPath); err != nil {
-				log.Println("Error adding watcher to subdirectory:", err)
+			if root != "" {
+				subRoot := filepath.Join(root, file.Name())
+				if err := watchDir(subDirPath, subRoot); err != nil {
+					log.Println("Error adding watcher to subdirectory:", err)
+				}
+			} else {
+				if err := watchDir(subDirPath, file.Name()); err != nil {
+					log.Println("Error adding watcher to subdirectory:", err)
+				}
 			}
 		}
 	}
